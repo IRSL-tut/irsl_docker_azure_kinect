@@ -1,0 +1,22 @@
+ARG BASE_IMAGE=ubuntu:24.04
+FROM ${BASE_IMAGE}
+
+WORKDIR /azure_ws
+
+RUN <<EOF
+set -e
+source /opt/ros/jazzy/setup.bash
+#
+mkdir -p src && cd src
+git clone -b humble https://github.com/microsoft/Azure_Kinect_ROS_Driver.git
+sed -i 's|<cv_bridge/cv_bridge.h>|<cv_bridge/cv_bridge.hpp>|g' Azure_Kinect_ROS_Driver/src/k4a_ros_device.cpp
+cd ..
+#
+apt-get update -q -qq
+rosdep init 2>/dev/null || true
+rosdep update
+rosdep install --from-paths src --ignore-src -r -y
+rm -rf /var/lib/apt/lists/*
+#
+colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+EOF
